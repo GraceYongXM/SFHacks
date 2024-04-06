@@ -11,11 +11,12 @@ openai.apiKey = openaiApiKey;
 exports.respondToMessage = functions.firestore
   .document('messages/{messageId}')
   .onCreate(async (snap, context) => {
-    const userMessage = snap.data().message;
+    const userMessage = snap.data().text;
 
   if (!userMessage) {
-    return res.status(400).send('No message provided.');
-  }
+      console.error('No message provided.');
+      return;
+    }
 
   const detailedPrompt = (
     "You are AgreeMate AI, a facilitation bot designed to assist individuals " +
@@ -47,9 +48,7 @@ exports.respondToMessage = functions.firestore
       timestamp: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    return res.send({ aiResponse });
   } catch (error) {
-    console.error("Error generating AI response:", error);
-    return res.status(500).send('Failed to generate AI response.');
+    console.error(`Failed to generate AI response. Error: ${error.message}`);
   }
 });
