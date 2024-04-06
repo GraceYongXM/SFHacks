@@ -62,7 +62,7 @@ const HomePage = () => {
   // Redirect user to chatbox component if they exist in the group chat
   useEffect(() => {
     if (participants) {
-      navigate("/chatbox"); // Redirect to chatbox component
+      navigate("/chatbox", { state: { room: groupChatName } }); // Redirect to chatbox component
     }
   }, [participants, navigate]);
 
