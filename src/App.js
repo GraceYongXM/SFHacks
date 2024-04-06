@@ -4,6 +4,7 @@ import ChatBox from "./components/ChatBox";
 import Welcome from "./components/Welcome";
 import { auth } from "./firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
+import HomePage from "./components/HomePage";
 
 function App() {
   const [user] = useAuthState(auth);
@@ -14,7 +15,8 @@ function App() {
         <Welcome />
       ) : (
         <>
-          <ChatBox />
+          <HomePage></HomePage>
+          {/* <ChatBox /> */}
         </>
       )}
     </div>

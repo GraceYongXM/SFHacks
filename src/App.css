@@ -148,3 +148,40 @@ input {
   background-color: #7cc5d9;
   font-weight: 600;
 }
+
+.group-chat-form {
+  padding: 10px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #242443;
+  height: 60px;
+  position: fixed;
+  left: 0;
+  top: 80px; /* Adjust based on Navbar height */
+  width: 100%;
+  z-index: 1;
+}
+
+.group-chat-form input {
+  height: 40px;
+  padding: 10px;
+  border-radius: 5px 0 0 5px;
+  border: none;
+  flex-grow: 1;
+  background-color: white;
+  color: #1c2c4c;
+  font-size: 1rem;
+}
+
+.group-chat-form button {
+  width: 70px;
+  height: 40px;
+  padding: 5px 10px;
+  border-radius: 0 5px 5px 0;
+  color: #242443;
+  border: 1px solid #7cc5d9;
+  background-color: #7cc5d9;
+  font-weight: 600;
+  cursor: pointer;
+}
