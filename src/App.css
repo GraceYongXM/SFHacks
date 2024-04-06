@@ -71,7 +71,7 @@ input {
 
 /* chat component */
 .messages-wrapper {
-  padding: 30px;
+  padding: 70px 30px;
   margin-bottom: 60px;
 }
 .chat-bubble {

@@ -1,5 +1,4 @@
 import React from "react";
-import Message from "./Message";
 import SendMessage from "./SendMessage";
 import NavBar from "./NavBar";
 import { useLocation } from "react-router-dom";
@@ -13,9 +12,6 @@ const ChatBox = () => {
   return (
     <main className="chat-box">
       <NavBar />
-      <div className="messages-wrapper">
-        <Message />
-      </div>
       <SendMessage room={room} />
     </main>
   );
