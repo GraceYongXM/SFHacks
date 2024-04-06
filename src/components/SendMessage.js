@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { db, auth } from "../firebase";
 import {
   collection,
@@ -15,6 +15,8 @@ const SendMessage = ({ room }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState();
   const messagesRef = collection(db, "messages");
+  const messagesEndRef = useRef(null);
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     const queryMessages = query(
@@ -27,12 +29,24 @@ const SendMessage = ({ room }) => {
       snapshot.forEach((doc) => {
         messages.push({ ...doc.data(), id: doc.id });
       });
-      console.log(messages);
       setMessages(messages);
     });
 
     return () => unsuscribe();
   }, []);
+
+  useEffect(() => {
+    console.log(isInitialMount.current);
+    if (!isInitialMount.current) {
+      scrollUp();
+    } else {
+      isInitialMount.current = false;
+    }
+  }, [messages]);
+
+  const scrollUp = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -46,6 +60,9 @@ const SendMessage = ({ room }) => {
     });
 
     setNewMessage("");
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
+
+    scrollUp();
   };
 
   return (
@@ -57,6 +74,7 @@ const SendMessage = ({ room }) => {
           </div>
         ))}
       </div>
+      <div ref={messagesEndRef} />
       <form onSubmit={handleSubmit} className="send-message">
         <input
           type="text"
