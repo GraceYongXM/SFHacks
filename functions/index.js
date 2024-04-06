@@ -8,8 +8,10 @@ const openai = require('openai');
 const openaiApiKey = functions.config().openai.api_key;
 openai.apiKey = openaiApiKey;
 
-exports.respondToMessage = functions.https.onRequest(async (req, res) => {
-  const userMessage = req.body.message || req.query.message;
+exports.respondToMessage = functions.firestore
+  .document('messages/{messageId}')
+  .onCreate(async (snap, context) => {
+    const userMessage = snap.data().message;
 
   if (!userMessage) {
     return res.status(400).send('No message provided.');
