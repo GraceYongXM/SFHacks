@@ -8,8 +8,39 @@ import {
   onSnapshot,
   query,
   orderBy,
+  doc,
+  getDoc,
+  updateDoc,
 } from "firebase/firestore";
 import Message from "./Message";
+
+// Track if user has sent message in this new round of questioning
+const updateHasSentMessage = async (room, usernameToUpdate) => {
+  try {
+    const chatRoomRef = doc(db, "Chatrooms", room);
+    const chatRoomSnapshot = await getDoc(chatRoomRef);
+    if (chatRoomSnapshot.exists) {
+      const chatRoomData = chatRoomSnapshot.data();
+      const participants = chatRoomData.Participants;
+
+      const participantToUpdate = participants.find(
+        (participant) => participant.username === usernameToUpdate
+      );
+
+      if (participantToUpdate) {
+        // Update has_sent_messages to true
+        participantToUpdate.has_sent_messages = true;
+        // Update the document in Firestore
+        await updateDoc(chatRoomRef, chatRoomData);
+        console.log(`Updated has_sent_messages for ${usernameToUpdate}`);
+      } else {
+        console.log(`${usernameToUpdate} not found in participants array`);
+      }
+    }
+  } catch (error) {
+    console.error("Error updating has_sent_message:", error);
+  }
+};
 
 const SendMessage = ({ room }) => {
   const [messages, setMessages] = useState([]);
@@ -36,7 +67,6 @@ const SendMessage = ({ room }) => {
   }, []);
 
   useEffect(() => {
-    console.log(isInitialMount.current);
     if (!isInitialMount.current) {
       scrollUp();
     } else {
@@ -58,6 +88,8 @@ const SendMessage = ({ room }) => {
       user: auth.currentUser.displayName,
       room,
     });
+
+    updateHasSentMessage(room, auth.currentUser.displayName);
 
     setNewMessage("");
     setMessages((prevMessages) => [...prevMessages, newMessage]);
