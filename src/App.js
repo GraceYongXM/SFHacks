@@ -1,25 +1,17 @@
 import "./App.css";
-import NavBar from "./components/NavBar";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import ChatBox from "./components/ChatBox";
-import Welcome from "./components/Welcome";
-import { auth } from "./firebase";
-import { useAuthState } from "react-firebase-hooks/auth";
-import HomePage from "./components/HomePage";
+import Main from "./components/Main";
 
 function App() {
-  const [user] = useAuthState(auth);
   return (
-    <div className="App">
-      <NavBar />
-      {!user ? (
-        <Welcome />
-      ) : (
-        <>
-          <HomePage></HomePage>
-          {/* <ChatBox /> */}
-        </>
-      )}
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Main />} />
+        <Route path="/chatbox" element={<ChatBox />} />
+        {/* <Route component={NotFound} /> */}
+      </Routes>
+    </Router>
   );
 }
 
