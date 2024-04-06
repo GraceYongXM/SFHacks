@@ -70,6 +70,9 @@ input {
 }
 
 /* chat component */
+.chat {
+  background-color: #fafafa;
+}
 .messages-wrapper {
   padding: 70px 30px;
   margin-bottom: 60px;
@@ -85,18 +88,23 @@ input {
   display: flex;
   align-items: flex-start;
   margin-bottom: 20px;
+  flex-direction: column;
 }
+/* CSS for messages coming from the right side */
 .chat-bubble.right {
-  margin-left: auto;
   border-radius: 20px 20px 0 20px;
   background-color: #fff;
   box-shadow: -2px 2px 1px 1px #88dded;
 }
-.chat-bubble__left {
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  margin-right: 10px;
+/* CSS for messages coming from the left side */
+.chat-bubble.left {
+  border-radius: 20px 20px 20px 0;
+  background-color: #7cc5d9;
+  box-shadow: 2px 2px 1px 1px #4c768d;
+}
+.reverse {
+  display: flex;
+  flex-direction: row-reverse;
 }
 .user-name {
   font-weight: bold;

@@ -49,7 +49,7 @@ const SendMessage = ({ room }) => {
   };
 
   return (
-    <div>
+    <div className="chat">
       <div className="messages-wrapper">
         {messages.map((message) => (
           <div key={message.id}>
