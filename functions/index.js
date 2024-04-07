@@ -3,82 +3,106 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 
 const OpenAI = require("openai").default;
+
 const openai = new OpenAI({
-  apiKey: "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",
+  apiKey: functions.config().openai.api_key,
+});
+const openai2 = new OpenAI({
+  apiKey: functions.config().openai2.api_key,
 });
 // const openaiApiKey = functions.config().openai.api_key;
 // openai.apiKey = "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";
+
+
 
 exports.respondToMessage = functions.firestore
   .document("answers/{answerId}")
   .onCreate(async (snap, context) => {
     const messagesArray = snap.data().messages;
+    
 
     if (!messagesArray || messagesArray.length === 0) {
       console.error("No messages provided.");
       return;
     }
-
     const db = admin.firestore();
-
-    try {
-      // For each text ID, get the corresponding document from 'messages' and accumulate the text
-      const messagesPromises = messagesArray.map((messageId) =>
+    const messagesPromises = messagesArray.map((messageId) =>
         db.collection("messages").doc(messageId).get()
       );
-      const messagesDocs = await Promise.all(messagesPromises);
+    
+    const conversationRef = db.collection("chatgpt").doc("ContextDoc");
+    const messagesDocs = await Promise.all(messagesPromises);
+    const userMessages = messagesDocs.map((doc) => {
+      if (doc.exists) {
+        const data = doc.data();
+        return `${data.user}: ${data.text}`;
+      }
+      return null;
+    }).filter(Boolean).join("\n");
 
-      // Prepare the user messages in a detailed format including timestamp, user, and text
-      const userMessages = messagesDocs.map((doc) => {
-        if (doc.exists) {
-          const data = doc.data();
-          // Format the timestamp for readability
-          const timestamp = data.createdAt
-            ? data.createdAt.toDate().toISOString()
-            : "Time Unknown";
-          // Construct the message line with timestamp, user, and text
-          return `${timestamp} - ${data.user}: ${data.text}`;
-        } else {
-          console.error("Message document does not exist", doc.id);
-          return null; // Returning null for non-existent documents, will filter out later
-        }
-      });
+    try {
+      const conversationDoc = await conversationRef.get();
+      let existingContext = conversationDoc.exists ? conversationDoc.data().context : "";
 
-      // Combine the text of each message into a single string
-      const combinedUserMessage =
-        "Respond to the following user message: " + userMessages.join(" ");
 
-      const detailedPrompt =
-        "You are AgreeMate AI, a facilitation bot designed to assist individuals " +
-        "in getting to know one another better and seeing if they're a good match as housemates. " +
-        "Your goal is to navigate this conversation by asking about their weekly schedules, hobbies, " +
-        "guest preferences, cleaning habits and preferences for shared responsibilities and items. " +
-        "You ask about one topic then wait for all parties to respond, then you can either delve " +
-        "deeper into the same topic or move onto the next topic if you think its suitable. If there " +
-        "is nothing more to discuss, create a home mates contract between the users and emphasize " +
-        "that to be a good match these rules must be followed.";
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          { role: "system", content: detailedPrompt },
-          { role: "user", content: userMessages },
+      const summaryResponse = await openai2.chat.completions.create({
+        model: "gpt-4-turbo-preview", // Use an appropriate model for summarization
+        messages : [
+          {role: "system", content: `Summarize this conversation. make it short but very detailed and also inform on what was most important and recently talked about. Also keep a count on the topics covered at the end of the summary like this: [sleep, noise, smoking, hobbies, cleanliness]. You may only put a topic in there if that topic has a very slim chance of causing conflict or if the users had settle on a compromise." +
+           `},
+          { role: "user", content: `\n${existingContext}, \n${userMessages}`},
         ],
         temperature: 0.5,
-        max_tokens: 400,
+        max_tokens: 600,
       });
 
+      const summarizedContext = summaryResponse.choices[0].message.content;
+
+      const detailedPrompt = 
+        "You are AgreeMate AI, an expert mediator for two individuals " +
+        "who want to get to know each another better to see if they're a good match as housemates. talk to them directly with first names or plural pronouns, not in the third person. " +
+        "Your goal is to navigate this conversation by asking about things such as their budget, weekly schedules, hobbies, " +
+        "guest preferences, smoking, cleaning habits and preferences for shared responsibilities and items. " +
+        "You ask about relevant common topics and tough questions and if they heavily disagree on something,try to make a fair compromise." +
+        "I will provide you a very brief summary and also tell you the topics you have already covered extensively in brackets so you don't talk about the exact same topic unless theres something to be expanded on from a possible conflict. " + 
+        "Try to keep your word count under 130. Create a house mates contract if 5 separate topics have been covered extensively. " ;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4-turbo-preview",
+        messages: [
+          { role: "system", content: detailedPrompt},
+          { role: "user", content: summarizedContext },
+        ],
+        temperature: 0.5,
+        max_tokens: 300,
+ 
+      });
+      
+      
+
+
       const aiResponse = response.choices[0].message.content;
-
-      const combinedMessages = userMessages + "\n" + aiResponse;
-
-      // Save the AI response back to Firestore
+      // const aiResponseWithInfo = `You: ${aiResponse}`;
+      
       await db.collection("messages").doc().set({
         user: "AgreeMate",
         text: aiResponse,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         room: "roomie",
       });
+
+      // Concatenate the new user messages and AI response to the existing context
+      let newContext = existingContext;
+      if (existingContext.length > 0) {
+        newContext += "\n\n"; // Separate different sets of messages for readability
+      }
+      newContext += `${userMessages}\n`;
+      // newContext += `${userMessages}`;
+
+
+      // Update the context field with the new combined string
+      await conversationRef.set({ context: newContext }, { merge: true });
+
     } catch (error) {
       console.error(
         `Failed to process messages or generate AI response. Error: ${error.message}`
