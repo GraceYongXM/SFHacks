@@ -117,7 +117,7 @@ input {
   color: #1c2c4c;
 }
 .user-message {
-  word-break: break-all;
+  word-break: normal;
 }
 .message-time {
   display: block;

@@ -10,6 +10,10 @@ const openai = new OpenAI({
 const openai2 = new OpenAI({
   apiKey: functions.config().openai2.api_key,
 });
+// const openaiApiKey = functions.config().openai.api_key;
+// openai.apiKey = "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";
+
+
 
 exports.respondToMessage = functions.firestore
   .document("answers/{answerId}")
@@ -100,6 +104,8 @@ exports.respondToMessage = functions.firestore
       await conversationRef.set({ context: newContext }, { merge: true });
 
     } catch (error) {
-      console.error(`Error: ${error.message}`);
+      console.error(
+        `Failed to process messages or generate AI response. Error: ${error.message}`
+      );
     }
   });
