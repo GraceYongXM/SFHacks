@@ -102,6 +102,10 @@ input {
   background-color: #7cc5d9;
   box-shadow: 2px 2px 1px 1px #4c768d;
 }
+.chat-bubble.gpt {
+  background-color: #b5e8b7;
+  box-shadow: 2px 2px 1px 1px #87b987;
+}
 .reverse {
   display: flex;
   flex-direction: row-reverse;

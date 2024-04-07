@@ -190,29 +190,29 @@ const resetMessageArrayForParticipants = async (room) => {
   }
 };
 
-const monitorGPTInput = (room) => {
-  try {
-    // Reference to the collection or document you want to monitor
-    const messageInputRef = collection(db, "Chatrooms", room);
+// const monitorGPTInput = (room) => {
+//   try {
+//     // Reference to the collection or document you want to monitor
+//     const messageInputRef = collection(db, "Chatrooms", room);
 
-    // Listen for changes to the collection (e.g., new documents added)
-    onSnapshot(messageInputRef, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          const newMessageInput = change.doc.data();
-          if (newMessageInput.user === "AgreeMate") {
-            console.log("New GPT input added:", newMessageInput);
-          }
-        }
-      });
-    });
-  } catch (error) {
-    console.error("Error monitoring Firestore changes:", error);
-  }
-};
+//     // Listen for changes to the collection (e.g., new documents added)
+//     onSnapshot(messageInputRef, (snapshot) => {
+//       snapshot.docChanges().forEach((change) => {
+//         if (change.type === "added") {
+//           const newMessageInput = change.doc.data();
+//           if (newMessageInput.user === "AgreeMate") {
+//             console.log("New GPT input added:", newMessageInput);
+//           }
+//         }
+//       });
+//     });
+//   } catch (error) {
+//     console.error("Error monitoring Firestore changes:", error);
+//   }
+// };
 
-// Call the function to start monitoring Firestore changes
-monitorGPTInput();
+// // Call the function to start monitoring Firestore changes
+// monitorGPTInput();
 
 const SendMessage = ({ room }) => {
   const [messages, setMessages] = useState([]);

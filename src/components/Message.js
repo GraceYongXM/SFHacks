@@ -6,7 +6,11 @@ const Message = ({ userName, message }) => {
     <div className={userName === auth.currentUser.displayName ? "reverse" : ""}>
       <div
         className={`chat-bubble ${
-          userName === auth.currentUser.displayName ? "right" : "left"
+          userName === auth.currentUser.displayName
+            ? "right"
+            : userName === "AgreeMate"
+            ? "gpt"
+            : "left"
         }`}
       >
         <p className="user-name">{userName}</p>
