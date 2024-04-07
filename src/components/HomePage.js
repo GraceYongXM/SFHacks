@@ -65,7 +65,7 @@ const HomePage = () => {
           Participants: [
             {
               email: userEmail,
-              has_sent_message: false,
+              has_sent_messages: false,
               messages: [],
               username: auth.currentUser.displayName,
             },
@@ -88,7 +88,6 @@ const HomePage = () => {
   }, [participants, navigate]);
 
   return (
-    // <main className="chat-box">
     <form className="group-chat-form" onSubmit={handleJoinChat}>
       <input
         type="text"
@@ -98,7 +97,6 @@ const HomePage = () => {
       />
       <button type="submit">Join</button>
     </form>
-    // </main>
   );
 };
 
