@@ -10,9 +10,6 @@ const openai = new OpenAI({
 const openai2 = new OpenAI({
   apiKey: functions.config().openai2.api_key,
 });
-// const openaiApiKey = functions.config().openai.api_key;
-// openai.apiKey = "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";
-
 
 
 exports.respondToMessage = functions.firestore
@@ -46,7 +43,7 @@ exports.respondToMessage = functions.firestore
 
 
       const summaryResponse = await openai2.chat.completions.create({
-        model: "gpt-4-turbo-preview", // Use an appropriate model for summarization
+        model: "gpt-4-turbo-preview",
         messages : [
           {role: "system", content: `Summarize this conversation. make it short but very detailed and also inform on what was most important and recently talked about. Also keep a count on the topics covered at the end of the summary like this: [sleep, noise, smoking, hobbies, cleanliness]. You may only put a topic in there if that topic has a very slim chance of causing conflict or if the users had settle on a compromise." +
            `},
@@ -91,16 +88,13 @@ exports.respondToMessage = functions.firestore
         room: "roomie",
       });
 
-      // Concatenate the new user messages and AI response to the existing context
       let newContext = existingContext;
       if (existingContext.length > 0) {
-        newContext += "\n\n"; // Separate different sets of messages for readability
+        newContext += "\n\n";
       }
       newContext += `${userMessages}\n`;
-      // newContext += `${userMessages}`;
 
-
-      // Update the context field with the new combined string
+      
       await conversationRef.set({ context: newContext }, { merge: true });
 
     } catch (error) {
