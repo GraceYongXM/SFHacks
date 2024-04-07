@@ -40,7 +40,7 @@ exports.respondToMessage = functions.firestore
 
       // Combine the text of each message into a single string
       const combinedUserMessage =
-        "Respond to the following user message: " + userMessages.join(" ");
+        "Respond to the following user messages: " + userMessages.join(" ");
 
       const detailedPrompt =
         "You are AgreeMate AI, a facilitation bot designed to assist individuals " +
@@ -51,12 +51,6 @@ exports.respondToMessage = functions.firestore
         "deeper into the same topic or move onto the next topic if you think its suitable. If there " +
         "is nothing more to discuss, create a home mates contract between the users and emphasize " +
         "that to be a good match these rules must be followed.";
-      // const responseDocRef = db.collection("Chatrooms").doc();
-      // await responseDocRef.set({
-      //   user: "AgreeMateAI",
-      //   message: detailedPrompt,
-      //   timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      // });
 
       const response = await openai.chat.completions.create({
         model: "gpt-4",
