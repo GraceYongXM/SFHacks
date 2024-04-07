@@ -14,6 +14,18 @@ import {
 } from "firebase/firestore";
 import Message from "./Message";
 
+const getChatroomData = async (room) => {
+  const chatroomRef = doc(db, "Chatrooms", room);
+  const chatroomSnapshot = await getDoc(chatroomRef);
+
+  if (!chatroomSnapshot.exists()) {
+    console.log(`Chatroom ${room} does not exist`);
+    return null;
+  }
+
+  return chatroomSnapshot.data();
+};
+
 // Update user message details in this new round of questioning
 const updateCurrentMessageDetails = async (
   room,
@@ -21,25 +33,25 @@ const updateCurrentMessageDetails = async (
   messageId
 ) => {
   try {
+    const chatroomData = await getChatroomData(room);
+
+    if (!chatroomData) return;
+
     const chatRoomRef = doc(db, "Chatrooms", room);
-    const chatRoomSnapshot = await getDoc(chatRoomRef);
-    if (chatRoomSnapshot.exists) {
-      const chatRoomData = chatRoomSnapshot.data();
-      const participants = chatRoomData.Participants;
+    const participants = chatroomData.Participants;
 
-      const participantToUpdate = participants.find(
-        (participant) => participant.username === usernameToUpdate
-      );
+    const participantToUpdate = participants.find(
+      (participant) => participant.username === usernameToUpdate
+    );
 
-      // Update has_sent_messages & message ID
-      if (participantToUpdate) {
-        participantToUpdate.has_sent_messages = true;
-        participantToUpdate.messages.push(messageId);
-        await updateDoc(chatRoomRef, chatRoomData);
-        console.log(`Updated has_sent_messages for ${usernameToUpdate}`);
-      } else {
-        console.log(`${usernameToUpdate} not found in participants array`);
-      }
+    // Update has_sent_messages & message ID
+    if (participantToUpdate) {
+      participantToUpdate.has_sent_messages = true;
+      participantToUpdate.messages.push(messageId);
+      await updateDoc(chatRoomRef, chatroomData);
+      console.log(`Updated has_sent_messages for ${usernameToUpdate}`);
+    } else {
+      console.log(`${usernameToUpdate} not found in participants array`);
     }
 
     checkAllUsersSentMessage(room);
@@ -51,25 +63,24 @@ const updateCurrentMessageDetails = async (
 // Track if all users have sent a message in this round of questioning
 const checkAllUsersSentMessage = async (room) => {
   try {
-    const chatRoomRef = doc(db, "Chatrooms", room);
-    const chatRoomSnapshot = await getDoc(chatRoomRef);
-    if (chatRoomSnapshot.exists()) {
-      const chatRoomData = chatRoomSnapshot.data();
-      const participants = chatRoomData.Participants;
+    const chatroomData = await getChatroomData(room);
 
-      // Check if all users have sent a message
-      const allUsersSentMessage = participants.every(
-        (participant) => participant.has_sent_messages
-      );
+    if (!chatroomData) return;
 
-      if (allUsersSentMessage) {
-        await insertChatroomMessagesIntoAnswers(room);
-        await resetMessageArrayForParticipants(room);
-        await resetHasSentMessage(room);
-        console.log("All users have sent a message");
-      } else {
-        console.log("Not all users have sent a message");
-      }
+    const participants = chatroomData.Participants;
+
+    // Check if all users have sent a message
+    const allUsersSentMessage = participants.every(
+      (participant) => participant.has_sent_messages
+    );
+
+    if (allUsersSentMessage) {
+      await insertChatroomMessagesIntoAnswers(room);
+      await resetMessageArrayForParticipants(room);
+      await resetHasSentMessage(room);
+      console.log("All users have sent a message");
+    } else {
+      console.log("Not all users have sent a message");
     }
   } catch (error) {
     console.error("Error checking all users sent message:", error);
@@ -79,28 +90,25 @@ const checkAllUsersSentMessage = async (room) => {
 // Reset all participants' has_sent_message to false
 const resetHasSentMessage = async (room) => {
   try {
+    const chatroomData = await getChatroomData(room);
+
+    if (!chatroomData) return;
+
     const chatroomRef = doc(db, "Chatrooms", room);
-    const chatroomSnapshot = await getDoc(chatroomRef);
+    const participants = chatroomData.Participants;
 
-    if (chatroomSnapshot.exists()) {
-      const chatroomData = chatroomSnapshot.data();
-      const participants = chatroomData.Participants;
+    // Update has_sent_message to false for all participants
+    const updatedParticipants = participants.map((participant) => {
+      participant.has_sent_messages = false;
+      return participant;
+    });
 
-      // Update has_sent_message to false for all participants
-      const updatedParticipants = participants.map((participant) => {
-        participant.has_sent_messages = false;
-        return participant;
-      });
+    // Update the document in Firestore with the modified participants
+    await updateDoc(chatroomRef, { Participants: updatedParticipants });
 
-      // Update the document in Firestore with the modified participants
-      await updateDoc(chatroomRef, { Participants: updatedParticipants });
-
-      console.log(
-        `Reset has_sent_message to false for all participants in chatroom ${room}`
-      );
-    } else {
-      console.log(`Chatroom ${room} does not exist`);
-    }
+    console.log(
+      `Reset has_sent_message to false for all participants in chatroom ${room}`
+    );
   } catch (error) {
     console.error("Error resetting has_sent_message:", error);
   }
@@ -109,28 +117,23 @@ const resetHasSentMessage = async (room) => {
 // Get all messages from all the participants in the same chatroom
 const getAllMessagesFromParticipants = async (room) => {
   try {
-    const chatroomRef = doc(db, "Chatrooms", room);
-    const chatroomSnapshot = await getDoc(chatroomRef);
+    const chatroomData = await getChatroomData(room);
 
-    if (chatroomSnapshot.exists()) {
-      const chatroomData = chatroomSnapshot.data();
-      const participants = chatroomData.Participants;
+    if (!chatroomData) return;
 
-      // Initialize an array to store all messages
-      let allMessages = [];
+    const participants = chatroomData.Participants;
 
-      // Iterate through each participant
-      for (const participant of participants) {
-        const participantMessages = participant.messages || []; // Get messages array for the participant (if exists)
-        allMessages = allMessages.concat(participantMessages); // Concatenate messages to allMessages array
-      }
+    // Initialize an array to store all messages
+    let allMessages = [];
 
-      console.log("All messages from all participants:", allMessages);
-      return allMessages; // Return all messages array
-    } else {
-      console.log(`Chatroom ${room} does not exist`);
-      return []; // Return empty array if chatroom does not exist
+    // Iterate through each participant
+    for (const participant of participants) {
+      const participantMessages = participant.messages || []; // Get messages array for the participant (if exists)
+      allMessages = allMessages.concat(participantMessages); // Concatenate messages to allMessages array
     }
+
+    console.log("All messages from all participants:", allMessages);
+    return allMessages; // Return all messages array
   } catch (error) {
     console.error("Error fetching messages from participants:", error);
     return []; // Return empty array in case of error
@@ -165,28 +168,23 @@ const insertChatroomMessagesIntoAnswers = async (room) => {
 // Reset all messages for all participants in the same chatroom once the messages are parsed in GPT
 const resetMessageArrayForParticipants = async (room) => {
   try {
+    const chatroomData = await getChatroomData(room);
+
+    if (!chatroomData) return;
+
     const chatroomRef = doc(db, "Chatrooms", room);
-    const chatroomSnapshot = await getDoc(chatroomRef);
+    const participants = chatroomData.Participants;
 
-    if (chatroomSnapshot.exists()) {
-      const chatroomData = chatroomSnapshot.data();
-      const participants = chatroomData.Participants;
+    // Reset message array for all participants
+    const updatedParticipants = participants.map((participant) => {
+      participant.messages = []; // Set message array to empty
+      return participant;
+    });
 
-      // Reset message array for all participants
-      const updatedParticipants = participants.map((participant) => {
-        participant.messages = []; // Set message array to empty
-        return participant;
-      });
+    // Update the document in Firestore with the modified participants
+    await updateDoc(chatroomRef, { Participants: updatedParticipants });
 
-      // Update the document in Firestore with the modified participants
-      await updateDoc(chatroomRef, { Participants: updatedParticipants });
-
-      console.log(
-        `Reset message array for all participants in chatroom ${room}`
-      );
-    } else {
-      console.log(`Chatroom ${room} does not exist`);
-    }
+    console.log(`Reset message array for all participants in chatroom ${room}`);
   } catch (error) {
     console.error("Error resetting message array for participants:", error);
   }
