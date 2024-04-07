@@ -10,8 +10,6 @@ const openai = new OpenAI({
 const openai2 = new OpenAI({
   apiKey: functions.config().openai2.api_key,
 });
-// const openaiApiKey = functions.config().openai.api_key;
-// openai.apiKey = "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";
 
 exports.respondToMessage = functions.firestore
   .document("answers/{answerId}")
@@ -94,10 +92,9 @@ exports.respondToMessage = functions.firestore
         room: room,
       });
 
-      // Concatenate the new user messages and AI response to the existing context
       let newContext = existingContext;
       if (existingContext.length > 0) {
-        newContext += "\n\n"; // Separate different sets of messages for readability
+        newContext += "\n\n";
       }
       newContext += `${userMessages}\n`;
       // newContext += `${userMessages}`;
