@@ -9,6 +9,8 @@ const openai = new OpenAI({
 // const openaiApiKey = functions.config().openai.api_key;
 // openai.apiKey = "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";
 
+
+
 exports.respondToMessage = functions.firestore
   .document("answers/{answerId}")
   .onCreate(async (snap, context) => {
@@ -19,30 +21,30 @@ exports.respondToMessage = functions.firestore
       return;
     }
 
-    // Initialize an array to hold the text from each message
-    let userMessages = [];
+    const db = admin.firestore();
 
     try {
-      // Step 2 & 3: For each text ID, get the corresponding document from 'messages' and accumulate the text
-      const db = admin.firestore();
+      // For each text ID, get the corresponding document from 'messages' and accumulate the text
       const messagesPromises = messagesArray.map((messageId) =>
         db.collection("messages").doc(messageId).get()
       );
       const messagesDocs = await Promise.all(messagesPromises);
 
-      messagesDocs.forEach((doc) => {
+      // Prepare the user messages in a detailed format including timestamp, user, and text
+      const userMessages = messagesDocs.map((doc) => {
         if (doc.exists) {
-          userMessages.push(doc.data().text);
+          const data = doc.data();
+          // Format the timestamp for readability
+          const timestamp = data.createdAt ? data.createdAt.toDate().toISOString() : "Time Unknown";
+          // Construct the message line with timestamp, user, and text
+          return `${timestamp} - ${data.user}: ${data.text}`;
         } else {
           console.error("Message document does not exist", doc.id);
+          return null; // Returning null for non-existent documents, will filter out later
         }
-      });
+      }).filter(message => message !== null).join("\n");
 
-      // Combine the text of each message into a single string
-      const combinedUserMessage =
-        "Respond to the following user message: " + userMessages.join(" ");
-
-      const detailedPrompt =
+      const detailedPrompt = 
         "You are AgreeMate AI, a facilitation bot designed to assist individuals " +
         "in getting to know one another better and seeing if they're a good match as housemates. " +
         "Your goal is to navigate this conversation by asking about their weekly schedules, hobbies, " +
@@ -51,37 +53,29 @@ exports.respondToMessage = functions.firestore
         "deeper into the same topic or move onto the next topic if you think its suitable. If there " +
         "is nothing more to discuss, create a home mates contract between the users and emphasize " +
         "that to be a good match these rules must be followed.";
-      // const responseDocRef = db.collection("Chatrooms").doc();
-      // await responseDocRef.set({
-      //   user: "AgreeMateAI",
-      //   message: detailedPrompt,
-      //   timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      // });
 
       const response = await openai.chat.completions.create({
         model: "gpt-4",
         messages: [
           { role: "system", content: detailedPrompt },
-          { role: "user", content: combinedUserMessage },
+          { role: "user", content: userMessages },
         ],
         temperature: 0.5,
         max_tokens: 400,
       });
 
       const aiResponse = response.choices[0].message.content;
-      console.log("aiResponse", aiResponse);
+
+      const combinedMessages = userMessages + "\n" + aiResponse;
 
       // Save the AI response back to Firestore
-      const responseDocRef = db.collection("messages").doc();
-      await responseDocRef.set({
+      await db.collection("messages").doc().set({
         user: "AgreeMate",
         text: aiResponse,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         room: "roomie",
       });
     } catch (error) {
-      console.error(
-        `Failed to process messages or generate AI response. Error: ${error.message}`
-      );
+      console.error(`Failed to process messages or generate AI response. Error: ${error.message}`);
     }
   });
