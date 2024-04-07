@@ -16,7 +16,6 @@ exports.respondToMessage = functions.firestore
   .onCreate(async (snap, context) => {
     const messagesArray = snap.data().messages;
     const room = snap.data().chatroomName;
-    console.log("room1", room);
 
     if (!messagesArray || messagesArray.length === 0) {
       console.error("No messages provided.");
@@ -41,7 +40,6 @@ exports.respondToMessage = functions.firestore
       .join("\n");
 
     try {
-      console.log("room2", room);
       const conversationDoc = await conversationRef.get();
       let existingContext = conversationDoc.exists
         ? conversationDoc.data().context
@@ -97,7 +95,6 @@ exports.respondToMessage = functions.firestore
         newContext += "\n\n";
       }
       newContext += `${userMessages}\n`;
-      // newContext += `${userMessages}`;
 
       // Update the context field with the new combined string
       await conversationRef.set({ context: newContext }, { merge: true });
